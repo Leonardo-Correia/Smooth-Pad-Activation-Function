@@ -162,21 +162,20 @@ def forward_logits(x, params, coeffs):
     return x
 
 @jit
-def loss(params, coeffs, input, output):
+def mse_loss(params, coeffs, input, output):
     """
     Compute the mean squared error loss between the predicted output of the MLP and the true output.
 
-        Parameters:
-    params (list): List of tuples containing weights and biases for each layer.
-    coeffs (list): List of coefficient arrays for the Padé approximation activation functions for each layer.
-    input (array-like): Input data.
-    output (array-like): True output data.
-        Returns:
-    Mean squared error loss as a scalar value.
+    Parameters:
+        params (list): List of tuples containing weights and biases for each layer.
+        coeffs (list): List of coefficient arrays for the Padé approximation activation functions for each layer.
+        input (array-like): Input data.
+        output (array-like): True output data.
+    Returns:
+        Mean squared error loss as a scalar value.
     """
 
     preds = forward(input, params, coeffs)
-
 
     return jnp.mean((preds - output) ** 2)
 
@@ -185,13 +184,13 @@ def bce_loss(params, coeffs, input, output):
     """
     Compute the mean binary cross entropy with logits between the predictet output of MLP and the true output for classification probles.
 
-        Parameters:
-    params (list): List of tuples containing weights and biases for each layer.
-    coeffs (list): List of coefficient arrays for the Padé approximation activation functions for each layer.
-    input (array-like): Input data.
-    output (array-like): True output data.
-        Returns:
-    Mean Binary Cross Entropy loss as scalar value.
+    Parameters:
+        params (list): List of tuples containing weights and biases for each layer.
+        coeffs (list): List of coefficient arrays for the Padé approximation activation functions for each layer.
+        input (array-like): Input data.
+        output (array-like): True output data.
+    Returns:
+        Mean Binary Cross Entropy loss as scalar value.
     """
     logits = forward_logits(input,params, coeffs)
 
@@ -214,14 +213,14 @@ def update_alternate(params,coeffs, x, y, lr):
         parameters and new_coeffs is the updated list of coefficients.
     """
 
-    grads_p= grad(loss, argnums = 0)(params, coeffs, x, y)
+    grads_p= grad(mse_loss, argnums = 0)(params, coeffs, x, y)
     flat_params, treedef_p = jax.tree.flatten(params)
     flat_grads_p, _ = jax.tree.flatten(grads_p)
 
     new_params = [p - lr * d for p,d in zip(flat_params,flat_grads_p)]
     new_params = jax.tree.unflatten(treedef_p, new_params)
 
-    grads_c = grad(loss,argnums = 1)(new_params, coeffs, x,  y)
+    grads_c = grad(mse_loss,argnums = 1)(new_params, coeffs, x,  y)
     flat_coeff, treedef_c = jax.tree.flatten(coeffs)
     flat_grads_c, _ = jax.tree.flatten(grads_c)
 
@@ -242,12 +241,21 @@ def update_non_val_bilevel(params, coeffs,x, y, lrp, lrc, inner_steps):
         y (array-like): True output data.
         lrp (float): Learning rate of parameter update.
         lrc (float): Learning rate of coefficients update.
-        inner_steps (int):"""
+        inner_steps (int): Number of inner optimization steps.
+    Returns:
+        Tuple of (new_params, new_coeffs) where new_params is the updated list of
+        parameters and new_coeffs is the updated list of coefficients.
+        """
     
     def inner_update(params, coeffs,x,y,lrp,inner_steps):
-        #inner update:
+        """
+        Intermediate function for inner update loop.
+
+        Returns:
+            Tuple of new_params resulted from inner loop.
+        """
         for i in range(inner_steps):
-            grads_p = grad(loss, argnums=0)(params, coeffs, x, y)
+            grads_p = grad(mse_loss, argnums=0)(params, coeffs, x, y)
             flat_params, treedef_p = jax.tree.flatten(params)
             flat_grads_p, _ = jax.tree.flatten(grads_p)
 
@@ -256,7 +264,7 @@ def update_non_val_bilevel(params, coeffs,x, y, lrp, lrc, inner_steps):
         return params
     
     new_params = inner_update(params,coeffs, x, y, lrp, inner_steps)
-    grads_c = grad(loss,argnums = 1)(new_params, coeffs, x,  y)
+    grads_c = grad(mse_loss,argnums = 1)(new_params, coeffs, x,  y)
     flat_coeff, treedef_c = jax.tree.flatten(coeffs)
     flat_grads_c, _ = jax.tree.flatten(grads_c)
 
@@ -265,10 +273,32 @@ def update_non_val_bilevel(params, coeffs,x, y, lrp, lrc, inner_steps):
 
 @partial(jit, static_argnums=(8,))
 def update_val_bilevel(params, coeffs,x_train, x_val, y_train, y_val, lrp, lrc, inner_steps):
-    
+    """
+    Perform a bilevel optimization update with validation dataset of the parameters and coefficients using gradient descent.
+    This function uses MLE loss as could be used for general purpose.
+    Parameters:
+        params (list): List of tuples containing weights and biases for each layer.
+        coeffs (list): List of coefficient arrays for the Padé approximation activation functions for each layer.
+        x_train (array-like): Input train data.
+        x_val (array-like): Input validation data.
+        y_train (array-like): True train output data.
+        y_val (array-like): True validation output data.
+        lrp (float): Learning rate of parameter update.
+        lrc (float): Learning rate of coefficients update.
+        inner_steps (int): Number of inner optimization steps.
+    Returns:
+        Tuple of (new_params, new_coeffs) where new_params is the updated list of
+        parameters and new_coeffs is the updated list of coefficients.
+    """
     def inner_update(params, coeffs, x_inner, y_inner, lrp, inner_steps):
+        """
+        Intermediate function for inner update loop.
+
+        Returns:
+            Tuple of new_params resulted from inner loop.
+        """
         for i in range(inner_steps):
-            grads_p = grad(loss, argnums=0)(params, coeffs, x_inner, y_inner)
+            grads_p = grad(mse_loss, argnums=0)(params, coeffs, x_inner, y_inner)
             flat_params, treedef_p = jax.tree.flatten(params)
             flat_grads_p, _ = jax.tree.flatten(grads_p)
 
@@ -277,7 +307,7 @@ def update_val_bilevel(params, coeffs,x_train, x_val, y_train, y_val, lrp, lrc, 
         return params
     
     new_params = inner_update(params,coeffs, x_train, y_train, lrp, inner_steps)
-    grads_c = grad(loss,argnums = 1)(new_params, coeffs, x_val, y_val)
+    grads_c = grad(mse_loss,argnums = 1)(new_params, coeffs, x_val, y_val)
     flat_coeff, treedef_c = jax.tree.flatten(coeffs)
     flat_grads_c, _ = jax.tree.flatten(grads_c)
 
@@ -286,9 +316,32 @@ def update_val_bilevel(params, coeffs,x_train, x_val, y_train, y_val, lrp, lrc, 
 
 
 @partial(jit, static_argnums=(8,))
-def update_val_bilevel_bce(params, coeffs,x_train, x_val, y_train, y_val, lrp, lrc, inner_steps):
-    
+def update_val_bilevel_bce(params, coeffs,x_train, x_val, y_train, y_val, lrp, lrc, inner_steps):    
+    """
+    Perform a bilevel optimization update with validation dataset of the parameters and coefficients using gradient descent.
+    This function uses BCE loss an could be used for classification purpose.
+
+    Parameters:
+        params (list): List of tuples containing weights and biases for each layer.
+        coeffs (list): List of coefficient arrays for the Padé approximation activation functions for each layer.
+        x_train (array-like): Input train data.
+        x_val (array-like): Input validation data.
+        y_train (array-like): True train output data.
+        y_val (array-like): True validation output data.
+        lrp (float): Learning rate of parameter update.
+        lrc (float): Learning rate of coefficients update.
+        inner_steps (int): Number of inner optimization steps.
+    Returns:
+        Tuple of (new_params, new_coeffs) where new_params is the updated list of
+        parameters and new_coeffs is the updated list of coefficients.
+    """ 
     def inner_update(params, coeffs, x_inner, y_inner, lrp, inner_steps):
+        """
+        Intermediate function for inner update loop.
+
+        Returns:
+            Tuple of new_params resulted from inner loop.
+        """
         for i in range(inner_steps):
             grads_p = grad(bce_loss, argnums=0)(params, coeffs, x_inner, y_inner)
             flat_params, treedef_p = jax.tree.flatten(params)
