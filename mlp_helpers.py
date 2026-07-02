@@ -5,33 +5,50 @@ import jax.numpy as jnp
 from jax import random
 from jax import grad, jit, vmap
 from functools import partial
+import pandas as pd
+import matplotlib.pyplot as plt
 
+from sklearn.metrics import confusion_matrix
 
+from sklearn.metrics import (
+    confusion_matrix,
+    roc_auc_score,
+    classification_report
+)
 import pade_ac as paf
 
 
-def make_batches(x, y, batch_size, key):
+def make_batches(X, y, batch_size, key):
     """
-    Generate batches of data from the input and output arrays.
-    
-    Parameters:
-        x (array-like): Input data.
-        y (array-like): Output data.
-        batch_size (int): Size of each batch.
-        key (jax.random.PRNGKey): Random key for shuffling the data.
-    Yields:
-        Tuple of (batch_x, batch_y) where batch_x and batch_y are batches of input and output data respectively.
+    Generate shuffled mini-batches.
+
+    Parameters
+    ----------
+    X (array-like): Input features.
+    y (array-like): Output freatures.
+    batch_size (int):  Batch size.
+    key (jax.random.PRNGKey): Random key used for shuffling.
+
+    Yields
+    ------
+    X_batch : jnp.ndarray
+        Batch of inputs.
+    y_batch : jnp.ndarray
+        Batch of targets.
     """
+    X = jnp.array(X)
+    y = jnp.array(y)
 
-    n = x.shape[0]
-    perm = random.permutation(key, n)
+    n = len(X)
 
-    x = x[perm]
-    y = y[perm]
+    indices = jax.random.permutation(key, n)
 
     for start in range(0, n, batch_size):
-        end = start + batch_size
-        yield x[start:end], y[start:end]
+        end = min(start + batch_size, n)
+
+        batch_idx = indices[start:end]
+
+        yield X[batch_idx], y[batch_idx]
 
 
 def train_val_test_split(x, y,
@@ -358,3 +375,102 @@ def update_val_bilevel_bce(params, coeffs,x_train, x_val, y_train, y_val, lrp, l
 
     new_coeffs = [c - lrc * g for c,g in zip(flat_coeff,flat_grads_c)]
     return new_params, jax.tree.unflatten(treedef_c, new_coeffs)
+
+#Visualizating and Results
+def plot_predictions(params, coeffs, x_test, y_test):
+    """
+    Plot the predictions against the true values using forward function.
+
+    Parameters:
+        params (list): List of tuples containing weights and biases for each layer.
+        coeffs (list): List of coefficient arrays for the Padé approximation activation functions for each layer.
+        x_test (array-like): Input test data.
+        y_test (array-like): True test output data.
+    
+    returns:
+        None. Displays a scatter plot of the true values and predictions.
+    """
+    y_pred = forward(x_test, params, coeffs)
+
+    y_pred_complete = forward(jnp.linspace(0,10,1000).reshape(1000,1), params, coeffs)
+    plt.figure(figsize=(7, 4))
+    plt.scatter(x_test[:, 0], y_test[:, 0], label="Real data", alpha=0.5)
+    plt.scatter(x_test[:, 0], y_pred[:, 0], label="Predictions", alpha=0.5)
+    plt.plot(jnp.linspace(0,10,1000).reshape(1000,1),y_pred_complete, color = "red")
+    plt.title("Predictions vs Real Data")
+    plt.xlabel("x[0]")
+    plt.ylabel("y")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+
+def plot_used_activations(coeffs, x_min=-5, x_max=5, n_points=500):
+    """
+    Plot the Padé activation functions used in the network.
+
+    Parameters:
+        coeffs (list): List of coefficient arrays for the Padé approximation activation functions for each layer.
+        x_min (float): Minimum value of the x-axis for plotting.
+        x_max (float): Maximum value of the x-axis for plotting.
+        n_points (int): Number of points to use for plotting.
+
+    Returns:
+        None. Displays plots of the activation functions.
+    """
+    xs = jnp.linspace(x_min, x_max, n_points)
+
+    for layer_idx, layer_coeffs in enumerate(coeffs[1:], start=1):
+        plt.figure(figsize=(7, 4))
+
+        for neuron_idx, c in enumerate(layer_coeffs):
+            ys = paf.s_pade(xs, c)
+            plt.plot(xs, ys, label=f"neurônio {neuron_idx}")
+
+        plt.title(f"Funções de ativação usadas - camada {layer_idx}")
+        plt.xlabel("x")
+        plt.ylabel("pade(x, coeff)")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+
+def classification_report_complete(x_test, y_test, params, coeffs, plot_roc_curve=False):
+    """
+    Generate a classification report including accuracy, precision, recall, and F1-score.
+
+    Parameters:
+        x_test (array-like): Test input data.
+        y_test (array-like): True labels.
+        params (list): List of tuples containing weights and biases for each layer.
+        coeffs (list): List of coefficient arrays for the Padé approximation activation functions for each layer.
+    Returns:
+        None. Prints the classification report and optionally plots the ROC curve.
+    """
+    probs = jax.nn.sigmoid(forward_logits(x_test, params, coeffs))
+    y_pred = (probs >= 0.5).astype(int)
+
+    cm = confusion_matrix(y_test, y_pred)
+    auc = roc_auc_score(y_test, probs)
+
+    print("Confusion Matrix:")
+    print(cm)
+
+    print(f"ROC AUC  : {auc:.4f}")
+
+    print(classification_report(y_test, y_pred, digits=4))
+
+    if plot_roc_curve:
+        from sklearn.metrics import roc_curve
+        fpr, tpr, _ = roc_curve(y_test, probs)
+
+        plt.figure(figsize=(7, 4))
+        plt.plot(fpr, tpr, label=f"ROC curve (area = {auc:.4f})")
+        plt.plot([0, 1], [0, 1], 'k--', label="Random classifier")
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.title("Receiver Operating Characteristic (ROC) Curve")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
