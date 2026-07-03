@@ -167,7 +167,7 @@ def forward_logits(x, params, coeffs):
         Output of the MLP after the forward pass.
     """
 
-    for (w, b), c in zip(params, coeffs[1:]):
+    for (w, b), c in zip(params[:-1], coeffs[1:-1]):
         z = jnp.dot(x, w) + b
 
         x = vmap(
@@ -176,7 +176,10 @@ def forward_logits(x, params, coeffs):
             out_axes=1
         )(z, c)
 
-    return x
+    w_last, b_last = params[-1]
+    logits = jnp.dot(x, w_last) + b_last
+
+    return logits
 
 @jit
 def mse_loss(params, coeffs, input, output):
