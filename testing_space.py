@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 #Nerwork Parameters
 lrp = 0.002
 lrc = 0.005
-n_int = 40
-inner_steps = 100
+n_int = 61
+inner_steps = 30
 batch_size = 128
 key = random.PRNGKey(0)
 
@@ -48,42 +48,48 @@ X_train = preprocess.fit_transform(X_train)
 X_val = preprocess.transform(X_val)
 X_test = preprocess.transform(X_test)
 
+print("X_train shape:", X_train.shape)
+print("X_train values:", X_train[0])
+
 y_train = jnp.array(y_train.to_numpy().reshape(-1, 1))
 y_val = jnp.array(y_val.to_numpy().reshape(-1, 1))
 y_test = jnp.array(y_test.to_numpy().reshape(-1, 1))
 
-#LOOPING
-loss_count_outer = []
-loss_count_inner = []
-for epoch in range(n_int):
-    key, subkey = random.split(key)
+print("X_train pós reshape, shape:", X_train.shape)
 
-    train_batches = mh.make_batches(X_train, y_train, batch_size, key)
-    val_batches = mh.make_batches(X_val, y_val, batch_size, key)
 
-    for xb, yb in train_batches:
-        try:
-            xvb, yvb = next(val_batches)
-        except StopIteration:
-            val_batches = mh.make_batches(X_val, y_val, batch_size, key)
-            xvb, yvb = next(val_batches)
-        params, coeffs = mh.update_val_bilevel_bce(
-            params, coeffs,
-            xb, xvb,
-            yb, yvb,
-            lrp, lrc,
-            inner_steps=inner_steps
-        )
-        train_loss = mh.bce_loss(params, coeffs, xb, yb)
-        loss_count_inner.append(train_loss)
-    train_loss = mh.bce_loss(params, coeffs, X_train, y_train)
-    loss_count_outer.append(train_loss)
-    if epoch % 5 == 0:
-        print(
-            f"Step {epoch}, "
-            f"Train Loss: {mh.bce_loss(params, coeffs, X_train, y_train):.6f}, "
-            f"Val Loss: {mh.bce_loss(params, coeffs, X_val, y_val):.6f}"
-        )
+# #LOOPING
+# loss_count_outer = []
+# loss_count_inner = []
+# for epoch in range(n_int):
+#     key, subkey = random.split(key)
 
-# Results 
-mh.classification_report_complete(X_test, y_test, params, coeffs, plot_roc_curve=True)
+#     train_batches = mh.make_batches(X_train, y_train, batch_size, key)
+#     val_batches = mh.make_batches(X_val, y_val, batch_size, key)
+
+#     for xb, yb in train_batches:
+#         try:
+#             xvb, yvb = next(val_batches)
+#         except StopIteration:
+#             val_batches = mh.make_batches(X_val, y_val, batch_size, key)
+#             xvb, yvb = next(val_batches)
+#         params, coeffs = mh.update_val_bilevel_bce(
+#             params, coeffs,
+#             xb, xvb,
+#             yb, yvb,
+#             lrp, lrc,
+#             inner_steps=inner_steps
+#         )
+#         train_loss = mh.bce_loss(params, coeffs, xb, yb)
+#         loss_count_inner.append(train_loss)
+#     train_loss = mh.bce_loss(params, coeffs, X_train, y_train)
+#     loss_count_outer.append(train_loss)
+#     if epoch % 5 == 0:
+#         print(
+#             f"Step {epoch}, "
+#             f"Train Loss: {mh.bce_loss(params, coeffs, X_train, y_train):.6f}, "
+#             f"Val Loss: {mh.bce_loss(params, coeffs, X_val, y_val):.6f}"
+#         )
+
+# # Results 
+# mh.classification_report_complete(X_test, y_test, params, coeffs, plot_roc_curve=True)
