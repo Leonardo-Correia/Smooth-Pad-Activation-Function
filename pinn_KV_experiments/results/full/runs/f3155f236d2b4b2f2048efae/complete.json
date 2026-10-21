@@ -1,0 +1,11 @@
+{
+  "sha256": {
+    "config.json": "c82f7afb1e1e9f8ab201c6dee0a8b8a56d248e8e9728362c3b3708080f9d6b67",
+    "datasets.npz": "88f3714b490889a4921a5aefaa26b4416775fe566c899380edd50b416bb6e95d",
+    "initial_parameters.npz": "b4c69e1e8b9082e43fbebbf9e7f0440af83c984c6e4e86171f7b936406e52882",
+    "loss_history.npz": "bba3b17ab275c062a51d39e8e89ce0dfea748d34ce464310596de345b5e1a539",
+    "metrics.json": "0cd538f98a3d8f53d2b8ee2304acc8fef07a3095f18d7cd266b442ffffb055d7",
+    "parameters.npz": "d7e63292951091eb8afc1703ce1c81dd42423558494bc26aa9b78bd59750eed0",
+    "predictions.npz": "dc963e8d7314753c82c7a28ebe8e54d92da3ec595f705ac5c63b40703d37b79b"
+  }
+}
