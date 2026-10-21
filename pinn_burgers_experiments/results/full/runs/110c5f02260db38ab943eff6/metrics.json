@@ -1,0 +1,23 @@
+{
+  "activation_coefficients": 0,
+  "best_validation_loss": 0.3873276114463806,
+  "compilation_seconds_this_process": 0.013952989000244997,
+  "completed_outer_steps": 8000,
+  "lr_ratio": null,
+  "numerical_stability": "finite",
+  "relative_l2": 0.5192115306854248,
+  "status": "success",
+  "total_coefficient_updates": 0,
+  "total_inner_updates": 320000,
+  "total_parameters": 66817,
+  "train_bc": 0.00021075751283206046,
+  "train_ic": 0.031314436346292496,
+  "train_pde": 0.16572853922843933,
+  "train_total": 0.3233545124530792,
+  "training_seconds": 88.53674384201076,
+  "val_bc": 0.00011358779738657176,
+  "val_ic": 0.032884255051612854,
+  "val_pde": 0.26143741607666016,
+  "val_total": 0.42642661929130554,
+  "weights_biases": 66817
+}
