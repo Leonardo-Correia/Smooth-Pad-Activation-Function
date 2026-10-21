@@ -1,0 +1,55 @@
+{
+  "configuration": {
+    "activation": "relu",
+    "adaptive_update": "first_order_bilevel",
+    "coefficient_key": "fold_in(PRNGKey(seed), 1)",
+    "data_seed": 0,
+    "hardware": {
+      "backend": "gpu",
+      "device_kinds": [
+        "NVIDIA GeForce RTX 3060"
+      ]
+    },
+    "implementation_sha256": "5b29e2c13648f6aad2843572ffa6b459df251b15d8a9015139d96bd417b32a8b",
+    "initialization_scale": 0.5,
+    "inner_steps": 40,
+    "jax_version": "0.5.2",
+    "jax_x64_enabled": false,
+    "jaxlib_version": "0.5.1",
+    "kappa": 0.3,
+    "lr_coeffs": 0.0001,
+    "lr_params": 0.001,
+    "matmul_precision": "None",
+    "n_coeffs": 9,
+    "network_size": [
+      2,
+      256,
+      256,
+      1
+    ],
+    "nt_ref": 1001,
+    "numpy_version": "2.2.4",
+    "nx_ref": 256,
+    "optimizer": "sgd",
+    "outer_steps": 8000,
+    "precision": "float32",
+    "pred_batch_size": 8192,
+    "print_every": 50,
+    "problem": "burgers",
+    "seed": 6,
+    "smoke": false,
+    "train_sizes": [
+      512,
+      128,
+      128
+    ],
+    "val_sizes": [
+      256,
+      64,
+      64
+    ]
+  },
+  "experiment": "E1",
+  "run_id": "d2366be44acef844c314b832",
+  "run_path": "../runs/d2366be44acef844c314b832"
+}

@@ -1,0 +1,73 @@
+{
+  "activation_coefficients": 4608,
+  "backend": "gpu",
+  "configuration": {
+    "activation": "pau",
+    "adaptive_update": "first_order_bilevel",
+    "coefficient_key": "fold_in(PRNGKey(seed), 1)",
+    "data_seed": 0,
+    "hardware": {
+      "backend": "gpu",
+      "device_kinds": [
+        "NVIDIA GeForce RTX 3060"
+      ]
+    },
+    "implementation_sha256": "5b29e2c13648f6aad2843572ffa6b459df251b15d8a9015139d96bd417b32a8b",
+    "initialization_scale": 0.5,
+    "inner_steps": 40,
+    "jax_version": "0.5.2",
+    "jax_x64_enabled": false,
+    "jaxlib_version": "0.5.1",
+    "kappa": 0.3,
+    "lr_coeffs": 0.0001,
+    "lr_params": 0.001,
+    "matmul_precision": "None",
+    "n_coeffs": 9,
+    "network_size": [
+      2,
+      256,
+      256,
+      1
+    ],
+    "nt_ref": 1001,
+    "numpy_version": "2.2.4",
+    "nx_ref": 256,
+    "optimizer": "sgd",
+    "outer_steps": 8000,
+    "precision": "float32",
+    "pred_batch_size": 8192,
+    "print_every": 50,
+    "problem": "burgers",
+    "seed": 5,
+    "smoke": false,
+    "train_sizes": [
+      512,
+      128,
+      128
+    ],
+    "val_sizes": [
+      256,
+      64,
+      64
+    ]
+  },
+  "devices": [
+    "cuda:0"
+  ],
+  "experiment_first_requested": "E1",
+  "problem_constants": {
+    "ALPHA": 1.0,
+    "LAMBDA_BC": 5.0,
+    "LAMBDA_F": 1.0,
+    "LAMBDA_IC": 5.0,
+    "NU": 0.003183098861837907,
+    "T_MAX": 1.0,
+    "T_MIN": 0.0,
+    "X_MAX": 1.0,
+    "X_MIN": -1.0
+  },
+  "reference": "Rusanov + central diffusion",
+  "run_id": "945aa46083edf6a07c1d10ab",
+  "total_parameters": 71425,
+  "weights_biases": 66817
+}
